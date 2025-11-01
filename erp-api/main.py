@@ -1,48 +1,3 @@
-"""\
-Simple ERP System API with Role-Based Access (FastAPI + SQLite)
-
-Roles:
-- Admin: can create teacher and student accounts, view all tasks
-- Teacher: can create tasks for students, view own tasks
-- Student: can view tasks assigned to them, update status
-
-Quick start
------------
-1) Create a virtual environment (optional but recommended)
-   python -m venv .venv && source .venv/bin/activate  # (Windows: .venv\Scripts\activate)
-
-2) Install dependencies
-   pip install fastapi uvicorn "sqlalchemy>=2" "passlib[bcrypt]" "python-jose[cryptography]" pydantic
-
-3) Run the server
-   uvicorn main:app --reload
-
-4) First-time admin setup (no auth required, allowed only if there is no admin yet):
-   POST /setup/create-admin {"username": "admin", "password": "Admin@123"}
-
-5) Login to get a JWT token:
-   POST /auth/login {"username": "admin", "password": "Admin@123"}
-   -> Use the returned access_token as: Authorization: Bearer <token>
-
-6) Create users (admin only):
-   - Create Teacher: POST /auth/register-teacher {"username": "t1", "password": "Teach@123"}
-   - Create Student: POST /auth/register-student {"username": "s1", "password": "Stud@123"}
-
-7) Teacher creates task for a student (teacher only):
-   POST /tasks {"title": "Read ch-1", "description": "Intro to DBMS", "student_id": 1, "due_date": "2025-09-05"}
-
-8) Students list their tasks (student only):
-   GET /tasks
-
-9) Students update their task status:
-   PATCH /tasks/1/status {"status": "done"}
-
-Notes
------
-- This is a minimal demo: use HTTPS, secrets env vars, migrations, etc. in production.
-- JWT secret in this file is for demo only; change it.
-"""
-
 from datetime import datetime, timedelta, date
 from typing import Optional, List, Literal
 
@@ -54,17 +9,11 @@ from passlib.context import CryptContext
 from sqlalchemy import create_engine, String, Integer, ForeignKey, Date, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 
-# ---------------------------
-# Config
-# ---------------------------
 DATABASE_URL = "sqlite:///./erp.db"
 JWT_SECRET = "CHANGE_ME_SUPER_SECRET"
 JWT_ALGO = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 
-# ---------------------------
-# DB setup
-# ---------------------------
 engine = create_engine(DATABASE_URL, echo=False)
 
 class Base(DeclarativeBase):
@@ -103,10 +52,6 @@ class Task(Base):
 
 Base.metadata.create_all(engine)
 
-# ---------------------------
-# Auth helpers
-# ---------------------------
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -125,9 +70,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGO)
 
-# ---------------------------
-# Schemas
-# ---------------------------
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -166,14 +108,9 @@ class TaskOut(BaseModel):
 class TaskStatusUpdate(BaseModel):
     status: Literal["todo", "in_progress", "done"]
 
-# ---------------------------
-# Dependencies
-# ---------------------------
-
 def get_db():
     with Session(engine) as session:
         yield session
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
@@ -201,18 +138,13 @@ def require_role(*allowed_roles: str):
             raise HTTPException(status_code=403, detail="Not enough permissions")
         return current_user
     return role_dep
-
-# ---------------------------
-# App
-# ---------------------------
+   
 app = FastAPI(title="Mini ERP API", version="1.0.0")
 
-# Health
 @app.get("/")
 def root():
     return {"message": "Welcome to Mini ERP API"}
 
-# --- One-time admin bootstrap (allowed only if no admin exists yet) ---
 class AdminBootstrap(BaseModel):
     username: str
     password: str
@@ -232,7 +164,6 @@ def create_admin(payload: AdminBootstrap, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
-# --- Auth ---
 @app.post("/auth/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
@@ -261,7 +192,6 @@ def register_student(payload: UserCreate, db: Session = Depends(get_db), current
     db.refresh(user)
     return user
 
-# --- Tasks ---
 @app.post("/tasks", response_model=TaskOut)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db), teacher: User = Depends(require_role("teacher"))):
     student = db.query(User).filter(User.id == payload.student_id, User.role == "student").first()
@@ -298,8 +228,7 @@ def update_status(task_id: int, payload: TaskStatusUpdate, db: Session = Depends
     db.commit()
     db.refresh(task)
     return task
-
-# --- Optional: simple counts (any logged-in user) ---
+   
 class CountsOut(BaseModel):
     users: int
     students: int
