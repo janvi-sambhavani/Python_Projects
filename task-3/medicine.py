@@ -3,7 +3,6 @@ from tkinter import messagebox
 from fpdf import FPDF
 import os
 
-# Sample medicine price list
 medicine_prices = {
     "Medicine A": 10,
     "Medicine B": 20,
@@ -11,10 +10,8 @@ medicine_prices = {
     "Medicine D": 25
 }
 
-# Store added items
 cart = []
 
-# Add selected medicine and quantity to the cart
 def add_medicine():
     try:
         selection = listbox.curselection()
@@ -44,12 +41,10 @@ def add_medicine():
     except Exception as e:
         messagebox.showerror("Error", f"Please select a medicine and enter a valid quantity.\n\nDetails: {e}")
 
-# Update total amount label
 def update_total():
     total_amount = sum(item['total'] for item in cart)
     total_amount_var.set(f"Rs. {total_amount:.2f}")
 
-# Generate invoice as PDF
 def generate_invoice():
     customer_name = customer_name_entry.get().strip()
 
@@ -69,7 +64,6 @@ def generate_invoice():
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
 
-        # Table headers
         pdf.cell(60, 10, "Medicine", border=1)
         pdf.cell(30, 10, "Quantity", border=1)
         pdf.cell(30, 10, "Price", border=1)
@@ -95,7 +89,6 @@ def generate_invoice():
 
         messagebox.showinfo("Invoice Generated", f"Invoice saved as:\n{save_path}")
 
-        # Reset
         cart.clear()
         total_amount_var.set("")
         customer_name_entry.delete(0, tk.END)
@@ -103,7 +96,6 @@ def generate_invoice():
     except Exception as e:
         messagebox.showerror("Error", f"Failed to generate invoice.\n\nDetails: {e}")
 
-# --- GUI Setup ---
 root = tk.Tk()
 root.title("Invoice Generator")
 root.geometry("400x500")
@@ -111,7 +103,6 @@ root.configure(bg="#2e2e2e")
 
 tk.Label(root, text="Medicine:", fg="white", bg="#2e2e2e", font=("Arial", 12)).pack()
 
-# Listbox for medicine selection
 listbox = tk.Listbox(root, selectmode=tk.SINGLE, height=5, bg="black", fg="white")
 for med in medicine_prices.keys():
     listbox.insert(tk.END, med)
