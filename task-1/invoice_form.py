@@ -1,10 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 
-# Dummy user database (in-memory)
 users = {}
 
-# Sign-Rp Window
 def sign_up():
     def register():
         username = entry_user.get()
@@ -29,7 +27,6 @@ def sign_up():
 
     tk.Button(signup_window, text="Register", command=register).pack()
 
-# Invoice Window
 def open_invoice_form():
     def calculate():
         try:
@@ -63,7 +60,6 @@ def open_invoice_form():
     label_total = tk.Label(invoice, text="Total: $0.00")
     label_total.pac
 
-# Sign-In Function
 def sign_in():
     username = entry_username.get()
     password = entry_password.get()
@@ -73,7 +69,6 @@ def sign_in():
     else:
         messagebox.showerror("Failed", "Invalid credentials")
 
-# Main window
 root = tk.Tk()
 root.title("Sign In / Sign Up")
 
